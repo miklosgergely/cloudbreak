@@ -76,6 +76,7 @@ public final class ModelDescriptions {
         public static final String NETWORK = "Network information for the database stack";
         public static final String DATABASE_SERVER = "Database server information for the database stack";
         public static final String AWS_PARAMETERS = "AWS-specific parameters for the database stack";
+        public static final String AZURE_PARAMETERS = "Azure-specific parameters for the database stack";
     }
 
     public static class NetworkModelDescription {
@@ -87,6 +88,10 @@ public final class ModelDescriptions {
 
     public static class AwsNetworkModelDescription {
         public static final String SUBNET_ID = "Subnet ID(s) of the specified AWS network";
+    }
+
+    public static class AzureNetworkModelDescription {
+        public static final String VIRTUAL_NETWORK = "Fully qualified IDs for an Azure network and subnet";
     }
 
     public static class DatabaseServerModelDescription {

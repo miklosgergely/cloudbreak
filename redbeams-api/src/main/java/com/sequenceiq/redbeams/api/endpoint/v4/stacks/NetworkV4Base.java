@@ -2,6 +2,8 @@ package com.sequenceiq.redbeams.api.endpoint.v4.stacks;
 
 import com.sequenceiq.cloudbreak.common.mappable.Mappable;
 import com.sequenceiq.cloudbreak.common.mappable.ProviderParametersBase;
+import com.sequenceiq.redbeams.api.endpoint.v4.stacks.aws.AwsNetworkV4Parameters;
+import com.sequenceiq.redbeams.api.endpoint.v4.stacks.azure.AzureNetworkV4Parameters;
 import com.sequenceiq.redbeams.doc.ModelDescriptions.NetworkModelDescription;
 
 import io.swagger.annotations.ApiModelProperty;
@@ -11,11 +13,11 @@ public class NetworkV4Base extends ProviderParametersBase {
     @ApiModelProperty(NetworkModelDescription.AWS_PARAMETERS)
     private AwsNetworkV4Parameters aws;
 
+    @ApiModelProperty(NetworkModelDescription.AZURE_PARAMETERS)
+    private AzureNetworkV4Parameters azure;
+
     // @ApiModelProperty(NetworkModelDescription.GCP_PARAMETERS)
     // private GcpNetworkV4Parameters gcp;
-
-    // @ApiModelProperty(NetworkModelDescription.AZURE_PARAMETERS)
-    // private AzureNetworkV4Parameters azure;
 
     // @ApiModelProperty(NetworkModelDescription.OPEN_STACK_PARAMETERS)
     // private OpenStackNetworkV4Parameters openstack;
@@ -45,7 +47,15 @@ public class NetworkV4Base extends ProviderParametersBase {
 
     @Override
     public Mappable createAzure() {
-        return null;
+        if (azure == null) {
+            azure = new AzureNetworkV4Parameters();
+        }
+
+        return azure;
+    }
+
+    public void setAzure(AzureNetworkV4Parameters azure) {
+        this.azure = azure;
     }
 
     @Override
@@ -67,4 +77,7 @@ public class NetworkV4Base extends ProviderParametersBase {
         return aws;
     }
 
+    public AzureNetworkV4Parameters getAzure() {
+        return azure;
+    }
 }

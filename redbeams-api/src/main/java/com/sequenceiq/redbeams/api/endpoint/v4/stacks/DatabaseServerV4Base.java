@@ -4,6 +4,8 @@ import com.sequenceiq.cloudbreak.common.mappable.Mappable;
 import com.sequenceiq.cloudbreak.common.mappable.ProviderParametersBase;
 import com.sequenceiq.cloudbreak.validation.ValidDatabaseVendor;
 import com.sequenceiq.cloudbreak.validation.ValidUrl;
+import com.sequenceiq.redbeams.api.endpoint.v4.stacks.aws.AwsDatabaseServerV4Parameters;
+import com.sequenceiq.redbeams.api.endpoint.v4.stacks.azure.AzureDatabaseServerV4Parameters;
 import com.sequenceiq.redbeams.doc.ModelDescriptions.DatabaseServerModelDescription;
 
 import io.swagger.annotations.ApiModelProperty;
@@ -39,11 +41,11 @@ public class DatabaseServerV4Base extends ProviderParametersBase {
     @ApiModelProperty(DatabaseServerModelDescription.AWS_PARAMETERS)
     private AwsDatabaseServerV4Parameters aws;
 
+    @ApiModelProperty(DatabaseServerModelDescription.AZURE_PARAMETERS)
+    private AzureDatabaseServerV4Parameters azure;
+
     // @ApiModelProperty(DatabaseServerModelDescription.GCP_PARAMETERS)
     // private GcpDatabaseServerV4Parameters gcp;
-
-    // @ApiModelProperty(DatabaseServerModelDescription.AZURE_PARAMETERS)
-    // private AzureDatabaseServerV4Parameters azure;
 
     // @ApiModelProperty(DatabaseServerModelDescription.OPEN_STACK_PARAMETERS)
     // private OpenStackDatabaseServerV4Parameters openstack;
@@ -137,7 +139,14 @@ public class DatabaseServerV4Base extends ProviderParametersBase {
 
     @Override
     public Mappable createAzure() {
-        return null;
+        if (azure == null) {
+            azure = new AzureDatabaseServerV4Parameters();
+        }
+        return azure;
+    }
+
+    public void setAzure(AzureDatabaseServerV4Parameters azure) {
+        this.azure = azure;
     }
 
     @Override
@@ -159,4 +168,7 @@ public class DatabaseServerV4Base extends ProviderParametersBase {
         return aws;
     }
 
+    public AzureDatabaseServerV4Parameters getAzure() {
+        return azure;
+    }
 }
