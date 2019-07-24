@@ -42,12 +42,12 @@ public class ServiceEndpointConfig {
     private String freeipaServiceId;
 
     @Value("${cb.redbeams.url}")
-    private String redbeamsipaServiceUrl;
+    private String redbeamsServiceUrl;
 
     @Value("${cb.redbeams.contextPath}")
     private String redbeamsContextPath;
 
-    @Value("${cb.freeipa.serviceid:}")
+    @Value("${cb.redbeams.serviceid:}")
     private String redbeamsServiceId;
 
     @Bean
@@ -72,6 +72,6 @@ public class ServiceEndpointConfig {
 
     @Bean
     public String redbeamsServerUrl() throws ServiceAddressResolvingException {
-        return serviceAddressResolver().resolveUrl(redbeamsipaServiceUrl + redbeamsContextPath, "http", redbeamsServiceId);
+        return serviceAddressResolver().resolveUrl(redbeamsServiceUrl + redbeamsContextPath, "http", redbeamsServiceId);
     }
 }

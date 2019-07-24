@@ -59,18 +59,6 @@ public class RedbeamsDbServerConfigurerTest {
     }
 
     @Test
-    public void getRemoteDbUrl() {
-        String result = underTest.getHostFromJdbcUrl(exampleJdbcUrl);
-        assertEquals(result, "dbsvr-ed671174-77de-40e5-ad59-37761d8230d9.c8uqzbscgqmb.eu-west-1.rds.amazonaws.com");
-    }
-
-    @Test
-    public void getRemoteDbPort() {
-        String result = underTest.getPortFromJdbcUrl(exampleJdbcUrl);
-        assertEquals("5432", result);
-    }
-
-    @Test
     public void isRemoteDatabaseNeededWhenDbServerCrnIsPresent() {
         Cluster testCluster = TestUtil.cluster();
         testCluster.setDatabaseServerCrn(dbServerCrn);
