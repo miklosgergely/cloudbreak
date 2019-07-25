@@ -65,6 +65,11 @@ integrationtest:
         imageId: 963f81ae-efd1-4bfb-7f91-4aa357950c02
         blueprints:
           - "CDP 1.0 - Data Science: Apache Spark, Apache Hive"
+    cloudstorage:
+      s3:
+        instanceProfile:
+      baseLocation:
+      fileSystemType:
 
   # azure parameters
   azure:
@@ -92,6 +97,8 @@ integrationtest:
       accountKey:
       accountName:
       locationName:
+      baseLocation:
+      fileSystemType:
 
   # gcp parameters
   gcp:

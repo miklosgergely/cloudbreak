@@ -22,6 +22,7 @@ import com.sequenceiq.it.cloudbreak.dto.environment.EnvironmentNetworkTestDto;
 import com.sequenceiq.it.cloudbreak.dto.environment.EnvironmentTestDto;
 import com.sequenceiq.it.cloudbreak.dto.freeipa.FreeIPATestDto;
 import com.sequenceiq.it.cloudbreak.dto.imagecatalog.ImageCatalogTestDto;
+import com.sequenceiq.it.cloudbreak.dto.sdx.SdxCloudStorageTestDto;
 import com.sequenceiq.it.cloudbreak.dto.sdx.SdxInternalTestDto;
 import com.sequenceiq.it.cloudbreak.dto.sdx.SdxTestDto;
 import com.sequenceiq.it.cloudbreak.dto.stack.StackTestDtoBase;
@@ -64,6 +65,8 @@ public interface CloudProvider {
     SdxTestDto sdx(SdxTestDto sdx);
 
     SdxInternalTestDto sdxInternal(SdxInternalTestDto sdxInternal);
+
+    SdxCloudStorageTestDto cloudStorage(SdxCloudStorageTestDto cloudStorage);
 
     String getSubnetCIDR();
 
