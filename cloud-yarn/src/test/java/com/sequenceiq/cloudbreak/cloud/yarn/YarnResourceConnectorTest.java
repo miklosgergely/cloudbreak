@@ -168,7 +168,7 @@ public class YarnResourceConnectorTest {
         InstanceGroupType type = InstanceGroupType.CORE;
         Collection<CloudInstance> instances = Lists.newArrayList(cloudInstanceMock, cloudInstanceMock);
 
-        return new Group(name, type, instances, null, null, null, null, null, 50);
+        return new Group(name, type, instances, null, null, null, null, null, 50, identity);
     }
 
     private void setUpStackParameters() {

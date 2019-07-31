@@ -216,7 +216,7 @@ class GcpDiskResourceBuilderTest {
 
     private Group createGroup(int rootVolumeSize) {
         return new Group(name, InstanceGroupType.CORE, Collections.singletonList(createDefaultCloudInstance()), security, null,
-                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), rootVolumeSize);
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), rootVolumeSize, identity);
     }
 
     private CloudInstance createDefaultCloudInstance() {

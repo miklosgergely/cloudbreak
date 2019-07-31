@@ -151,7 +151,7 @@ class GcpAttachedDiskResourceBuilderTest {
                 0L, "cb-centos66-amb200-2015-05-25");
         CloudInstance cloudInstance =  new CloudInstance(instanceId, instanceTemplate, instanceAuthentication);
         group = new Group(name, InstanceGroupType.CORE, Collections.singletonList(cloudInstance), security, null,
-                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), 50);
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), 50, identity);
 
         List<VolumeSetAttributes.Volume> volumes = new ArrayList<>();
         volumes.add(new VolumeSetAttributes.Volume("1234", "noop", 0, "eph"));

@@ -289,7 +289,7 @@ public class GcpInstanceResourceBuilderTest {
         InstanceAuthentication instanceAuthentication = new InstanceAuthentication("sshkey", "", "cloudbreak");
         CloudInstance cloudInstance = newCloudInstance(params, instanceAuthentication);
         return new Group(name, InstanceGroupType.CORE, Collections.singletonList(cloudInstance), security, null,
-                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), 50);
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), 50, identity);
     }
 
     public CloudInstance newCloudInstance(Map<String, Object> params, InstanceAuthentication instanceAuthentication) {

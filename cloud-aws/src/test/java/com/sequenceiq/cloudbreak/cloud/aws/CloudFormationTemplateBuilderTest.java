@@ -733,7 +733,7 @@ public class CloudFormationTemplateBuilderTest {
         List<Group> groups = new ArrayList<>();
         Security security = new Security(emptyList(), singletonList("single-sg-id"));
         groups.add(new Group("master", InstanceGroupType.CORE, emptyList(), security, instance,
-                instanceAuthentication, instanceAuthentication.getLoginUserName(), "publickey", ROOT_VOLUME_SIZE));
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), "publickey", ROOT_VOLUME_SIZE, identity));
         CloudStack cloudStack = new CloudStack(groups, new Network(new Subnet(CIDR)), image, emptyMap(), emptyMap(), "template",
                 instanceAuthentication, instanceAuthentication.getLoginUserName(), "publicKey", null);
         //WHEN
@@ -762,9 +762,9 @@ public class CloudFormationTemplateBuilderTest {
         List<Group> groups = new ArrayList<>();
         Security security = new Security(emptyList(), singletonList("single-sg-id"));
         groups.add(new Group("gateway", InstanceGroupType.GATEWAY, emptyList(), security, instance,
-                instanceAuthentication, instanceAuthentication.getLoginUserName(), "publickey", ROOT_VOLUME_SIZE));
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), "publickey", ROOT_VOLUME_SIZE, identity));
         groups.add(new Group("master", InstanceGroupType.CORE, emptyList(), security, instance,
-                instanceAuthentication, instanceAuthentication.getLoginUserName(), "publickey", ROOT_VOLUME_SIZE));
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), "publickey", ROOT_VOLUME_SIZE, identity));
         CloudStack cloudStack = new CloudStack(groups, new Network(new Subnet(CIDR)), image, emptyMap(), emptyMap(), "template",
                 instanceAuthentication, instanceAuthentication.getLoginUserName(), "publicKey", null);
         //WHEN
@@ -793,7 +793,7 @@ public class CloudFormationTemplateBuilderTest {
         List<Group> groups = new ArrayList<>();
         Security security = new Security(emptyList(), List.of("multi-sg-id1", "multi-sg-id2"));
         groups.add(new Group("master", InstanceGroupType.CORE, emptyList(), security, instance,
-                instanceAuthentication, instanceAuthentication.getLoginUserName(), "publickey", ROOT_VOLUME_SIZE));
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), "publickey", ROOT_VOLUME_SIZE, identity));
         CloudStack cloudStack = new CloudStack(groups, new Network(new Subnet(CIDR)), image, emptyMap(), emptyMap(), "template",
                 instanceAuthentication, instanceAuthentication.getLoginUserName(), "publicKey", null);
         //WHEN
@@ -827,7 +827,7 @@ public class CloudFormationTemplateBuilderTest {
         spotInstanceTemplate.putParameter("spotPrice", "0.1");
         CloudInstance spotInstance = new CloudInstance("SOME_ID", spotInstanceTemplate, instanceAuthentication);
         groups.add(new Group("compute", InstanceGroupType.CORE, singletonList(spotInstance), security, spotInstance,
-                instanceAuthentication, instanceAuthentication.getLoginUserName(), "publickey", ROOT_VOLUME_SIZE));
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), "publickey", ROOT_VOLUME_SIZE, identity));
         groups.add(createDefaultGroup("gateway", InstanceGroupType.GATEWAY, ROOT_VOLUME_SIZE, security));
         CloudStack cloudStack = createDefaultCloudStack(groups, getDefaultCloudStackParameters(), getDefaultCloudStackTags());
 
@@ -865,7 +865,7 @@ public class CloudFormationTemplateBuilderTest {
 
     private Group createDefaultGroup(String name, InstanceGroupType type, int rootVolumeSize, Security security) {
         return new Group(name, type, singletonList(instance), security, null,
-                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), rootVolumeSize);
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), rootVolumeSize, identity);
     }
 
     private InstanceTemplate createDefaultInstanceTemplate() {

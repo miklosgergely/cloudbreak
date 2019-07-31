@@ -129,9 +129,9 @@ public abstract class AwsComponentTest {
                 getCloudInstance(instanceAuthentication, "worker", workerStatuses, 1L, null),
                 getCloudInstance(instanceAuthentication, "worker", InstanceStatus.STARTED, 2L, INSTANCE_ID_3));
         List<Group> groups = List.of(new Group("master", InstanceGroupType.CORE, masterInstances, security, null,
-                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), ROOT_VOLUME_SIZE),
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), ROOT_VOLUME_SIZE, identity),
                 new Group("worker", InstanceGroupType.CORE, workerInstances, security, null,
-                        instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), ROOT_VOLUME_SIZE));
+                        instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), ROOT_VOLUME_SIZE, identity));
         Network network = new Network(new Subnet(CIDR));
 
         Map<InstanceGroupType, String> userData = ImmutableMap.of(
@@ -151,7 +151,7 @@ public abstract class AwsComponentTest {
         Security security = getSecurity();
 
         List<Group> groups = List.of(new Group("group1", InstanceGroupType.CORE, List.of(instance), security, null,
-                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), ROOT_VOLUME_SIZE));
+                instanceAuthentication, instanceAuthentication.getLoginUserName(), instanceAuthentication.getPublicKey(), ROOT_VOLUME_SIZE, identity));
         Network network = new Network(new Subnet(CIDR));
 
         Map<InstanceGroupType, String> userData = ImmutableMap.of(
