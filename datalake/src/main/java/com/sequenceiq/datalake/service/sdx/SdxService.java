@@ -28,6 +28,7 @@ import com.sequenceiq.cloudbreak.client.CloudbreakServiceUserCrnClient;
 import com.sequenceiq.cloudbreak.common.json.Json;
 import com.sequenceiq.cloudbreak.common.json.JsonUtil;
 import com.sequenceiq.cloudbreak.common.service.Clock;
+import com.sequenceiq.cloudbreak.logger.MDCBuilder;
 import com.sequenceiq.cloudbreak.util.FileReaderUtils;
 import com.sequenceiq.common.api.cloudstorage.CloudStorageRequest;
 import com.sequenceiq.datalake.controller.exception.BadRequestException;
@@ -147,6 +148,8 @@ public class SdxService {
             throw new BadRequestException("Can not parse internal stackrequest", e);
         }
 
+        MDCBuilder.buildMdcContext(sdxCluster);
+
         sdxCluster = sdxClusterRepository.save(sdxCluster);
 
         LOGGER.info("trigger SDX creation: {}", sdxCluster);
@@ -264,6 +267,7 @@ public class SdxService {
     }
 
     private void deleteSdxCluster(SdxCluster sdxCluster) {
+        MDCBuilder.buildMdcContext(sdxCluster);
         sdxCluster.setStatus(SdxClusterStatus.DELETE_REQUESTED);
         sdxClusterRepository.save(sdxCluster);
         sdxReactorFlowManager.triggerSdxDeletion(sdxCluster.getId());

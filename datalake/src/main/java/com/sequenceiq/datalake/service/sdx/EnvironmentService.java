@@ -12,7 +12,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.dyngr.Polling;
+import com.dyngr.core.AttemptResult;
 import com.dyngr.core.AttemptResults;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sequenceiq.cloudbreak.common.json.JsonUtil;
 import com.sequenceiq.datalake.entity.SdxCluster;
 import com.sequenceiq.datalake.entity.SdxClusterStatus;
@@ -48,27 +50,29 @@ public class EnvironmentService {
             DetailedEnvironmentResponse environmentResponse = Polling.waitPeriodly(pollingConfig.getSleepTime(), pollingConfig.getSleepTimeUnit())
                     .stopIfException(false)
                     .stopAfterDelay(pollingConfig.getDuration(), pollingConfig.getDurationTimeUnit())
-                    .run(() -> {
-                        LOGGER.info("Creation polling environment for environment status: '{}' in '{}' env",
-                                sdxCluster.getClusterName(), sdxCluster.getEnvName());
-                        DetailedEnvironmentResponse environment = getDetailedEnvironmentResponse(
-                                sdxCluster.getInitiatorUserCrn(), sdxCluster.getEnvCrn());
-                        LOGGER.info("Response from environment: {}", JsonUtil.writeValueAsString(environment));
-                        if (environment.getEnvironmentStatus().isAvailable()) {
-                            return AttemptResults.finishWith(environment);
-                        } else {
-                            if (environment.getEnvironmentStatus().isFailed()) {
-                                return AttemptResults.breakFor("Environment creation failed " + sdxCluster.getEnvName());
-                            } else {
-                                return AttemptResults.justContinue();
-                            }
-                        }
-                    });
+                    .run(() -> pollingEnvironmentStatus(sdxCluster));
             sdxCluster.setStatus(SdxClusterStatus.REQUESTED);
             sdxClusterRepository.save(sdxCluster);
             return environmentResponse;
         } else {
             throw notFound("SDX cluster", sdxId).get();
+        }
+    }
+
+    private AttemptResult<DetailedEnvironmentResponse> pollingEnvironmentStatus(SdxCluster sdxCluster) throws JsonProcessingException {
+        LOGGER.info("Creation polling environment for environment status: '{}' in '{}' env",
+                sdxCluster.getClusterName(), sdxCluster.getEnvName());
+        DetailedEnvironmentResponse environment = getDetailedEnvironmentResponse(
+                sdxCluster.getInitiatorUserCrn(), sdxCluster.getEnvCrn());
+        LOGGER.info("Response from environment: {}", JsonUtil.writeValueAsString(environment));
+        if (environment.getEnvironmentStatus().isAvailable()) {
+            return AttemptResults.finishWith(environment);
+        } else {
+            if (environment.getEnvironmentStatus().isFailed()) {
+                return AttemptResults.breakFor("Environment creation failed " + sdxCluster.getEnvName());
+            } else {
+                return AttemptResults.justContinue();
+            }
         }
     }
 

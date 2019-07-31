@@ -14,19 +14,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.dyngr.Polling;
+import com.dyngr.core.AttemptResult;
 import com.dyngr.core.AttemptResults;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sequenceiq.cloudbreak.common.json.JsonUtil;
 import com.sequenceiq.datalake.entity.SdxCluster;
 import com.sequenceiq.datalake.entity.SdxClusterStatus;
 import com.sequenceiq.datalake.repository.SdxClusterRepository;
 import com.sequenceiq.environment.api.v1.environment.model.response.DetailedEnvironmentResponse;
-import com.sequenceiq.redbeams.api.endpoint.v4.databaseserver.DatabaseServerV4Endpoint;
 import com.sequenceiq.redbeams.api.endpoint.v4.databaseserver.requests.AllocateDatabaseServerV4Request;
 import com.sequenceiq.redbeams.api.endpoint.v4.databaseserver.responses.DatabaseServerStatusV4Response;
 import com.sequenceiq.redbeams.api.endpoint.v4.databaseserver.responses.DatabaseServerTerminationOutcomeV4Response;
 import com.sequenceiq.redbeams.api.endpoint.v4.stacks.AwsDatabaseServerV4Parameters;
 import com.sequenceiq.redbeams.api.endpoint.v4.stacks.DatabaseServerV4Request;
 import com.sequenceiq.redbeams.api.model.common.Status;
+import com.sequenceiq.redbeams.client.RedbeamsClient;
 
 @Service
 public class DatabaseService {
@@ -42,11 +44,11 @@ public class DatabaseService {
     private SdxClusterRepository sdxClusterRepository;
 
     @Inject
-    private DatabaseServerV4Endpoint databaseServerV4Endpoint;
+    private RedbeamsClient redbeamsClient;
 
     public DatabaseServerStatusV4Response create(Long sdxId, Optional<SdxCluster> sdxClusterOptional, DetailedEnvironmentResponse env) {
         if (sdxClusterOptional.isPresent()) {
-            DatabaseServerStatusV4Response resp = databaseServerV4Endpoint.create(getDatabaseRequest(env));
+            DatabaseServerStatusV4Response resp = redbeamsClient.databaseServerV4Endpoint().create(getDatabaseRequest(env));
             sdxClusterOptional.ifPresent(sdxCluster -> {
                 sdxCluster.setDatabaseCrn(resp.getResourceCrn());
                 sdxCluster.setStatus(SdxClusterStatus.EXTERNAL_DATABASE_CREATION_IN_PROGRESS);
@@ -67,7 +69,7 @@ public class DatabaseService {
 
     public void terminate(Long sdxId, Optional<SdxCluster> sdxClusterOptional) {
         sdxClusterOptional.ifPresentOrElse(sdxCluster -> {
-            DatabaseServerTerminationOutcomeV4Response resp = databaseServerV4Endpoint.terminate(sdxCluster.getDatabaseCrn());
+            DatabaseServerTerminationOutcomeV4Response resp = redbeamsClient.databaseServerV4Endpoint().terminate(sdxCluster.getDatabaseCrn());
             saveStatus(sdxClusterOptional.get(), SdxClusterStatus.EXTERNAL_DATABASE_DELETION_IN_PROGRESS);
             waitAndGetDatabase(sdxCluster, resp.getResourceCrn(),
                     status -> Status.DELETE_COMPLETED.equals(status), status -> Status.DELETE_FAILED.equals(status));
@@ -111,32 +113,34 @@ public class DatabaseService {
         DatabaseServerStatusV4Response databaseResponse = Polling.waitPeriodly(pollingConfig.getSleepTime(), pollingConfig.getSleepTimeUnit())
                 .stopIfException(false)
                 .stopAfterDelay(pollingConfig.getDuration(), pollingConfig.getDurationTimeUnit())
-                .run(() -> {
-                    try {
-                        LOGGER.info("Creation polling redbeams for database status: '{}' in '{}' env",
-                                sdxCluster.getClusterName(), sdxCluster.getEnvName());
-                        DatabaseServerStatusV4Response rdsStatus = getDatabaseStatus(databaseCrn);
-                        LOGGER.info("Response from redbeams: {}", JsonUtil.writeValueAsString(rdsStatus));
-                        if (exitcrit.apply(rdsStatus.getStatus())) {
-                            return AttemptResults.finishWith(rdsStatus);
-                        } else {
-                            if (failurecrit.apply(rdsStatus.getStatus())) {
-                                if (rdsStatus.getStatusReason() != null && rdsStatus.getStatusReason().startsWith("No databaseserver found with crn")) {
-                                    return AttemptResults.finishWith(null);
-                                }
-                                return AttemptResults.breakFor("Database operation failed " + sdxCluster.getEnvName());
-                            } else {
-                                return AttemptResults.justContinue();
-                            }
-                        }
-                    } catch (NotFoundException e) {
-                        return AttemptResults.finishWith(null);
-                    }
-                });
+                .run(() -> pollingDatabaseStatus(sdxCluster, databaseCrn, exitcrit, failurecrit));
         return databaseResponse;
     }
 
+    private AttemptResult<DatabaseServerStatusV4Response> pollingDatabaseStatus(SdxCluster sdxCluster, String databaseCrn, Function<Status, Boolean> exitcrit, Function<Status, Boolean> failurecrit) throws JsonProcessingException {
+        try {
+            LOGGER.info("Creation polling redbeams for database status: '{}' in '{}' env",
+                    sdxCluster.getClusterName(), sdxCluster.getEnvName());
+            DatabaseServerStatusV4Response rdsStatus = getDatabaseStatus(databaseCrn);
+            LOGGER.info("Response from redbeams: {}", JsonUtil.writeValueAsString(rdsStatus));
+            if (exitcrit.apply(rdsStatus.getStatus())) {
+                return AttemptResults.finishWith(rdsStatus);
+            } else {
+                if (failurecrit.apply(rdsStatus.getStatus())) {
+                    if (rdsStatus.getStatusReason() != null && rdsStatus.getStatusReason().startsWith("No databaseserver found with crn")) {
+                        return AttemptResults.finishWith(null);
+                    }
+                    return AttemptResults.breakFor("Database operation failed " + sdxCluster.getEnvName());
+                } else {
+                    return AttemptResults.justContinue();
+                }
+            }
+        } catch (NotFoundException e) {
+            return AttemptResults.finishWith(null);
+        }
+    }
+
     private DatabaseServerStatusV4Response getDatabaseStatus(String databaseCrn) {
-        return databaseServerV4Endpoint.getStatusOfManagedDatabaseServerByCrn(databaseCrn);
+        return redbeamsClient.databaseServerV4Endpoint().getStatusOfManagedDatabaseServerByCrn(databaseCrn);
     }
 }

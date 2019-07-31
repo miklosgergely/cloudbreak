@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import com.dyngr.Polling;
 import com.dyngr.core.AttemptResult;
 import com.dyngr.core.AttemptResults;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.Status;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.StackV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.response.StackV4Response;
@@ -69,29 +70,31 @@ public class ProvisionerService {
             Polling.waitPeriodly(pollingConfig.getSleepTime(), pollingConfig.getSleepTimeUnit())
                     .stopIfException(false)
                     .stopAfterDelay(pollingConfig.getDuration(), pollingConfig.getDurationTimeUnit())
-                    .run(() -> {
-                        LOGGER.info("Deletion polling cloudbreak for stack status: '{}' in '{}' env", sdxCluster.getClusterName(), sdxCluster.getEnvName());
-                        try {
-                            StackV4Response stackV4Response = cloudbreakClient.withCrn(sdxCluster.getInitiatorUserCrn())
-                                    .stackV4Endpoint()
-                                    .get(0L, sdxCluster.getClusterName(), Collections.emptySet());
-                            LOGGER.info("Response from cloudbreak: {}", JsonUtil.writeValueAsString(stackV4Response));
-                            if (Status.DELETE_FAILED.equals(stackV4Response.getStatus())) {
-                                return AttemptResults.breakFor(
-                                        "Stack deletion failed '" + sdxCluster.getClusterName() + "', " + stackV4Response.getStatusReason()
-                                );
-                            } else {
-                                return AttemptResults.justContinue();
-                            }
-                        } catch (NotFoundException e) {
-                            return AttemptResults.finishWith(null);
-                        }
-                    });
+                    .run(() -> pollingClusterDeletionStatus(sdxCluster));
             sdxCluster.setStatus(SdxClusterStatus.STACK_DELETED);
             sdxClusterRepository.save(sdxCluster);
         }, () -> {
             throw notFound("SDX cluster", id).get();
         });
+    }
+
+    private AttemptResult<Object> pollingClusterDeletionStatus(SdxCluster sdxCluster) throws JsonProcessingException {
+        LOGGER.info("Deletion polling cloudbreak for stack status: '{}' in '{}' env", sdxCluster.getClusterName(), sdxCluster.getEnvName());
+        try {
+            StackV4Response stackV4Response = cloudbreakClient.withCrn(sdxCluster.getInitiatorUserCrn())
+                    .stackV4Endpoint()
+                    .get(0L, sdxCluster.getClusterName(), Collections.emptySet());
+            LOGGER.info("Response from cloudbreak: {}", JsonUtil.writeValueAsString(stackV4Response));
+            if (Status.DELETE_FAILED.equals(stackV4Response.getStatus())) {
+                return AttemptResults.breakFor(
+                        "Stack deletion failed '" + sdxCluster.getClusterName() + "', " + stackV4Response.getStatusReason()
+                );
+            } else {
+                return AttemptResults.justContinue();
+            }
+        } catch (NotFoundException e) {
+            return AttemptResults.finishWith(null);
+        }
     }
 
     public void startStackProvisioning(Long id, DetailedEnvironmentResponse environment, DatabaseServerStatusV4Response database) {
@@ -131,37 +134,39 @@ public class ProvisionerService {
             Polling.waitPeriodly(pollingConfig.getSleepTime(), pollingConfig.getSleepTimeUnit())
                     .stopIfException(false)
                     .stopAfterDelay(pollingConfig.getDuration(), pollingConfig.getDurationTimeUnit())
-                    .run(() -> {
-                        LOGGER.info("Polling cloudbreak for stack status: '{}' in '{}' env", sdxCluster.getClusterName(), sdxCluster.getEnvName());
-                        try {
-                            StackV4Response stackV4Response = cloudbreakClient.withCrn(sdxCluster.getInitiatorUserCrn())
-                                    .stackV4Endpoint()
-                                    .get(0L, sdxCluster.getClusterName(), Collections.emptySet());
-                            LOGGER.info("Response from cloudbreak: {}", JsonUtil.writeValueAsString(stackV4Response));
-                            ClusterV4Response cluster = stackV4Response.getCluster();
-                            if (stackAndClusterAvailable(stackV4Response, cluster)) {
-                                return AttemptResults.finishWith(stackV4Response);
-                            } else {
-                                if (Status.CREATE_FAILED.equals(stackV4Response.getStatus())) {
-                                    LOGGER.info("Stack creation failed {}", stackV4Response.getName());
-                                    return sdxCreationFailed(sdxCluster, stackV4Response.getStatusReason());
-                                } else if (Status.CREATE_FAILED.equals(stackV4Response.getCluster().getStatus())) {
-                                    LOGGER.info("Cluster creation failed {}", stackV4Response.getCluster().getName());
-                                    return sdxCreationFailed(sdxCluster, stackV4Response.getCluster().getStatusReason());
-                                } else {
-                                    return AttemptResults.justContinue();
-                                }
-                            }
-                        } catch (NotFoundException e) {
-                            LOGGER.debug("Stack not found on CB side " + sdxCluster.getClusterName(), e);
-                            return AttemptResults.breakFor("Stack not found on CB side " + sdxCluster.getClusterName());
-                        }
-                    });
+                    .run(() -> pollingClusterCreationStatus(sdxCluster));
             sdxCluster.setStatus(SdxClusterStatus.RUNNING);
             sdxClusterRepository.save(sdxCluster);
         }, () -> {
             throw notFound("SDX cluster", id).get();
         });
+    }
+
+    private AttemptResult<StackV4Response> pollingClusterCreationStatus(SdxCluster sdxCluster) throws JsonProcessingException {
+        LOGGER.info("Polling cloudbreak for stack status: '{}' in '{}' env", sdxCluster.getClusterName(), sdxCluster.getEnvName());
+        try {
+            StackV4Response stackV4Response = cloudbreakClient.withCrn(sdxCluster.getInitiatorUserCrn())
+                    .stackV4Endpoint()
+                    .get(0L, sdxCluster.getClusterName(), Collections.emptySet());
+            LOGGER.info("Response from cloudbreak: {}", JsonUtil.writeValueAsString(stackV4Response));
+            ClusterV4Response cluster = stackV4Response.getCluster();
+            if (stackAndClusterAvailable(stackV4Response, cluster)) {
+                return AttemptResults.finishWith(stackV4Response);
+            } else {
+                if (Status.CREATE_FAILED.equals(stackV4Response.getStatus())) {
+                    LOGGER.info("Stack creation failed {}", stackV4Response.getName());
+                    return sdxCreationFailed(sdxCluster, stackV4Response.getStatusReason());
+                } else if (Status.CREATE_FAILED.equals(stackV4Response.getCluster().getStatus())) {
+                    LOGGER.info("Cluster creation failed {}", stackV4Response.getCluster().getName());
+                    return sdxCreationFailed(sdxCluster, stackV4Response.getCluster().getStatusReason());
+                } else {
+                    return AttemptResults.justContinue();
+                }
+            }
+        } catch (NotFoundException e) {
+            LOGGER.debug("Stack not found on CB side " + sdxCluster.getClusterName(), e);
+            return AttemptResults.breakFor("Stack not found on CB side " + sdxCluster.getClusterName());
+        }
     }
 
     private AttemptResult<StackV4Response> sdxCreationFailed(SdxCluster sdxCluster, String statusReason) {
